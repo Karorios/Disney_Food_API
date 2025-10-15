@@ -1,86 +1,89 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Receta, RecetaCreate, RecetaUpdate, Plato
-from app.db import SessionDep
+from pydantic import BaseModel
+from typing import List, Optional
 
 router = APIRouter(prefix="/recetas", tags=["Recetas"])
 
+# ---- MODELOS ----
+class RecetaBase(BaseModel):
+    nombre: str
+    ingredientes: List[str]
+    instrucciones: str
+    plato_id: Optional[int] = None
 
-# CREATE
-@router.post("/crear", response_model=Receta, status_code=201)
-async def crear_receta(nueva_receta: RecetaCreate, session: SessionDep):
-    datos_receta = nueva_receta.model_dump()
-    plato_db = session.get(Plato, datos_receta.get("plato_id"))
-    if not plato_db or not plato_db.activo:
-        raise HTTPException(status_code=404, detail="Plato no encontrado o inactivo")
+class Receta(RecetaBase):
+    id: int
+    activo: bool = True
 
-    receta = Receta.model_validate(datos_receta)
-    session.add(receta)
-    session.commit()
-    session.refresh(receta)
+# ---- BASE EN MEMORIA ----
+recetas_db: List[Receta] = []
+contador = 1
+
+
+# ---- ENDPOINTS ----
+@router.post("/crear", response_model=Receta)
+def crear_receta(data: RecetaBase):
+    global contador
+    nueva = Receta(id=contador, **data.dict(), activo=True)
+    recetas_db.append(nueva)
+    contador += 1
+    return nueva
+
+
+
+
+
+@router.get("/find/all", response_model=List[Receta])
+def listar_recetas():
+    return [r for r in recetas_db if r.activo]
+
+@router.get("/search", response_model=List[Receta])
+def buscar_recetas(nombre_receta: str):
+    resultados = [r for r in recetas_db if nombre_receta.lower() in r.nombre.lower() and r.activo]
+    if not resultados:
+        raise HTTPException(status_code=404, detail="No se encontraron recetas con ese nombre.")
+    return resultados
+
+@router.get("/find/{receta_id}", response_model=Receta)
+def obtener_receta(receta_id: int):
+    receta = next((r for r in recetas_db if r.id == receta_id and r.activo), None)
+    if not receta:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
     return receta
 
 
-# FIND ALL (solo activas)
-@router.get("/find/all", response_model=list[Receta])
-async def obtener_todas_recetas(session: SessionDep):
-    return session.query(Receta).filter(Receta.activo == True).all()
-
-
-# FIND ONE (por ID)
-@router.get("/find/{receta_id}", response_model=Receta)
-async def obtener_receta(receta_id: int, session: SessionDep):
-    receta_db = session.get(Receta, receta_id)
-    if not receta_db or not receta_db.activo:
-        raise HTTPException(status_code=404, detail="Receta no encontrada o inactiva")
-    return receta_db
-
-
-# FIND INACTIVOS (papelera)
-@router.get("/inactivos", response_model=list[Receta])
-async def obtener_recetas_inactivas(session: SessionDep):
-    return session.query(Receta).filter(Receta.activo == False).all()
-
-
-# UPDATE
 @router.put("/update/{receta_id}", response_model=Receta)
-async def actualizar_receta(receta_id: int, datos: RecetaUpdate, session: SessionDep):
-    receta_db = session.get(Receta, receta_id)
-    if not receta_db or not receta_db.activo:
-        raise HTTPException(status_code=404, detail="Receta no encontrada o inactiva")
-
-    datos_dict = datos.model_dump(exclude_unset=True)
-    for key, value in datos_dict.items():
-        setattr(receta_db, key, value)
-
-    session.add(receta_db)
-    session.commit()
-    session.refresh(receta_db)
-    return receta_db
+def actualizar_receta(receta_id: int, data: RecetaBase):
+    for r in recetas_db:
+        if r.id == receta_id and r.activo:
+            r.nombre = data.nombre
+            r.ingredientes = data.ingredientes
+            r.instrucciones = data.instrucciones
+            r.plato_id = data.plato_id
+            return r
+    raise HTTPException(status_code=404, detail="Receta no encontrada o inactiva")
 
 
-# DELETE
 @router.delete("/kill/{receta_id}")
-async def eliminar_receta(receta_id: int, session: SessionDep):
-    receta_db = session.get(Receta, receta_id)
-    if not receta_db or not receta_db.activo:
-        raise HTTPException(status_code=404, detail="Receta no encontrada o ya inactiva")
-
-    receta_db.activo = False
-    session.add(receta_db)
-    session.commit()
-    return {"mensaje": f"La receta '{receta_db.nombre}' ha sido movida a la papelera."}
+def eliminar_receta(receta_id: int):
+    for r in recetas_db:
+        if r.id == receta_id and r.activo:
+            r.activo = False
+            return {"mensaje": f"Receta '{r.nombre}' movida a la papelera."}
+    raise HTTPException(status_code=404, detail="Receta no encontrada o ya eliminada")
 
 
-# RESTORE
+@router.get("/trash", response_model=List[Receta])
+def listar_eliminadas():
+    return [r for r in recetas_db if not r.activo]
+
+
 @router.put("/restore/{receta_id}")
-async def restaurar_receta(receta_id: int, session: SessionDep):
-    receta_db = session.get(Receta, receta_id)
-    if not receta_db:
-        raise HTTPException(status_code=404, detail="Receta no encontrada")
-    if receta_db.activo:
-        raise HTTPException(status_code=400, detail="La receta ya está activa")
+def restaurar_receta(receta_id: int):
+    for r in recetas_db:
+        if r.id == receta_id and not r.activo:
+            r.activo = True
+            return {"mensaje": f"Receta '{r.nombre}' restaurada exitosamente."}
+    raise HTTPException(status_code=404, detail="Receta no encontrada o ya activa")
 
-    receta_db.activo = True
-    session.add(receta_db)
-    session.commit()
-    return {"mensaje": f"La receta '{receta_db.nombre}' ha sido restaurada correctamente."}
+

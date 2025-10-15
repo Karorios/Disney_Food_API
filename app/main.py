@@ -1,64 +1,76 @@
 from fastapi import FastAPI
-from app.db import crear_tablas
-from app.routers import peliculas, platos, restaurantes, recetas
+from app.routers import peliculas, platos, restaurantes, recetas, reportes
 
 app = FastAPI(
     title="Disney Foods API",
     version="2.0",
-    description="API para gestionar películas de Disney, platos inspirados, restaurantes y recetas.",
-    lifespan=crear_tablas
+    description="API para gestionar películas de Disney, los platos inspirados en ellas, restaurantes y recetas."
 )
 
 app.include_router(peliculas.router)
 app.include_router(platos.router)
 app.include_router(restaurantes.router)
 app.include_router(recetas.router)
+app.include_router(reportes.router)
+
 
 @app.get("/")
 def inicio():
     return {
-        "mensaje": "Bienvenido a la Disney Foods API",
+        "mensaje": "Bienvenido a la Disney Foods API ",
         "documentacion": "/docs",
         "mapa_endpoints": "/mapa"
     }
 
+
 @app.get("/mapa")
 def mapa_endpoints():
     return {
-        "Peliculas": {
+        "Películas": {
             "Crear": "/peliculas/crear",
             "Consultar todas": "/peliculas/find/all",
             "Consultar por ID": "/peliculas/find/{pelicula_id}",
-            "Consultar eliminadas": "/peliculas/inactivas",
             "Actualizar": "/peliculas/update/{pelicula_id}",
-            "Eliminar (a papelera)": "/peliculas/kill/{pelicula_id}",
-            "Restaurar": "/peliculas/restore/{pelicula_id}"
+            "Eliminar": "/peliculas/kill/{pelicula_id}",
+            "Restaurar": "/peliculas/restore/{pelicula_id}",
+            "Papelera": "/peliculas/trash",
+            "Buscar": "/peliculas/search?q=",
+            "Filtrar": "/peliculas/filter?genero="
         },
         "Platos": {
             "Crear": "/platos/crear",
             "Consultar todos": "/platos/find/all",
             "Consultar por ID": "/platos/find/{plato_id}",
-            "Consultar eliminados": "/platos/inactivos",
             "Actualizar": "/platos/update/{plato_id}",
-            "Eliminar (a papelera)": "/platos/kill/{plato_id}",
-            "Restaurar": "/platos/restore/{plato_id}"
+            "Eliminar": "/platos/kill/{plato_id}",
+            "Restaurar": "/platos/restore/{plato_id}",
+            "Papelera": "/platos/trash",
+            "Buscar": "/platos/search?q=",
+            "Filtrar": "/platos/filter?tipo="
         },
         "Restaurantes": {
             "Crear": "/restaurantes/crear",
             "Consultar todos": "/restaurantes/find/all",
             "Consultar por ID": "/restaurantes/find/{restaurante_id}",
-            "Consultar eliminados": "/restaurantes/inactivos",
             "Actualizar": "/restaurantes/update/{restaurante_id}",
-            "Eliminar (a papelera)": "/restaurantes/kill/{restaurante_id}",
-            "Restaurar": "/restaurantes/restore/{restaurante_id}"
+            "Eliminar": "/restaurantes/kill/{restaurante_id}",
+            "Restaurar": "/restaurantes/restore/{restaurante_id}",
+            "Papelera": "/restaurantes/trash",
+            "Buscar": "/restaurantes/search?nombre_restaurante=",
+            "Filtrar": "/restaurantes/filter?ubicacion="
         },
         "Recetas": {
             "Crear": "/recetas/crear",
             "Consultar todas": "/recetas/find/all",
             "Consultar por ID": "/recetas/find/{receta_id}",
-            "Consultar eliminadas": "/recetas/inactivos",
             "Actualizar": "/recetas/update/{receta_id}",
-            "Eliminar (a papelera)": "/recetas/kill/{receta_id}",
-            "Restaurar": "/recetas/restore/{receta_id}"
+            "Eliminar": "/recetas/kill/{receta_id}",
+            "Restaurar": "/recetas/restore/{receta_id}",
+            "Papelera": "/recetas/trash",
+            "Buscar": "/recetas/search?nombre_receta=",
+            "Filtrar": "/recetas/filter?dificultad="
+        },
+        "Reportes": {
+            "Exportar CSV": "/reportes/exportar_csv"
         }
     }
