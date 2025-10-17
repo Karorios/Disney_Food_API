@@ -1,0 +1,82 @@
+
+{
+  "titulo": "Encanto",
+  "anio": 2021,
+  "genero": "Animacion"
+}
+{
+  "titulo": "Coco",
+  "anio": 2017,
+  "genero": "Animación, Música"
+}
+
+### Crear plato
+POST http://127.0.0.1:8000/platos/crear
+Content-Type: application/json
+
+{
+  "nombre": "Arepa con queso",
+  "descripcion": "Deliciosa arepa colombiana con queso derretido.",
+  "tipo": "Comida típica",
+  "pelicula_id": 1
+}
+{
+  "nombre": "Tamales de Coco",
+  "descripcion": "Tamales dulces inspirados en la película Coco",
+  "tipo": "Dulce",
+  "pelicula_id": 1
+}
+
+
+
+##############################
+# RESTAURANTES
+##############################
+
+# Crear restaurante
+POST http://127.0.0.1:8000/restaurantes/crear
+Content-Type: application/json
+
+{
+  "nombre": "La Casa Madrigal",
+  "ubicacion": "Colombia",
+  "tipo": "Familiar",
+  "especialidad": "Arepas con queso"
+}
+{
+  "nombre": "La Casa de Miguel",
+  "ubicacion": "Ciudad de México",
+  "tipo": "Temático",
+  "especialidad": "Comida mexicana tradicional"
+}
+
+
+### Crear receta
+POST http://127.0.0.1:8000/recetas/crear
+Content-Type: application/json
+
+{
+  "nombre": "Arepa con queso",
+  "ingredientes": ["Harina", "Queso", "Sal", "Mantequilla", "Agua"],
+  "instrucciones": "Mezclar ingredientes, formar arepas y asar.",
+  "plato_id": 1
+}
+
+{
+  "nombre": "Tamales dulces de Coco",
+  "ingredientes": ["Harina de maíz", "Azúcar", "Coco rallado", "Leche", "Canela"],
+  "instrucciones": "Mezclar todos los ingredientes, envolver en hojas de maíz y cocinar al vapor.",
+  "plato_id": 1
+}
+
+
+
+
+
+
+
+
+
+
+
+

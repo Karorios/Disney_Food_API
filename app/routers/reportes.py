@@ -1,40 +1,33 @@
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
-import io
 import csv
-
-from app.routers import peliculas, platos, restaurantes, recetas
+from fastapi import APIRouter
+from fastapi.responses import FileResponse
+from sqlmodel import select
+from app.db import SessionDep
+from app.models import Pelicula, Plato, Restaurante, Receta
 
 router = APIRouter(prefix="/reportes", tags=["Reportes"])
 
-
 @router.get("/exportar_csv")
-def exportar_csv():
-    output = io.StringIO()
+async def exportar_csv(session: SessionDep):
+    """Genera un reporte CSV de todas las entidades activas."""
+    with open("reporte_disney_foods.csv", mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Entidad", "Nombre/Título", "Campo adicional", "Activo"])
 
-    output.write('\ufeff')
+        # Películas
+        for p in session.exec(select(Pelicula)).all():
+            writer.writerow(["Pelicula", p.titulo, p.genero, p.activo])
 
-    writer = csv.writer(output)
-    writer.writerow(["Seccion", "Nombre / Titulo", "Detalle 1", "Detalle 2", "Detalle 3", "Estado"])
+        # Platos
+        for pl in session.exec(select(Plato)).all():
+            writer.writerow(["Plato", pl.nombre, pl.tipo, pl.activo])
 
-    # ---- Películas ----
-    for p in peliculas.peliculas_db:
-        writer.writerow(["Peliculas", p.titulo, p.anio, p.genero, "", "Activo" if p.activo else "Eliminado"])
+        # Restaurantes
+        for r in session.exec(select(Restaurante)).all():
+            writer.writerow(["Restaurante", r.nombre, r.tipo, r.activo])
 
-    # ---- Platos ----
-    for pl in platos.platos_db:
-        writer.writerow(["Platos", pl.nombre, pl.descripcion, pl.tipo, "", "Activo" if pl.activo else "Eliminado"])
+        # Recetas
+        for rc in session.exec(select(Receta)).all():
+            writer.writerow(["Receta", rc.nombre, rc.ingredientes, rc.activo])
 
-    # ---- Restaurantes ----
-    for r in restaurantes.restaurantes_db:
-        writer.writerow(["Restaurantes", r.nombre, r.ubicacion, r.tipo, r.especialidad or "",
-                         "Activo" if r.activo else "Eliminado"])
-
-    # ---- Recetas ----
-    for rc in recetas.recetas_db:
-        writer.writerow(["Recetas", rc.nombre, rc.descripcion, rc.dificultad, rc.tiempo_preparacion,
-                         "Activo" if rc.activo else "Eliminado"])
-
-    output.seek(0)
-    headers = {"Content-Disposition": "attachment; filename=reporte_disney_foods.csv"}
-    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv", headers=headers)
+    return FileResponse("reporte_disney_foods.csv", filename="reporte_disney_foods.csv")

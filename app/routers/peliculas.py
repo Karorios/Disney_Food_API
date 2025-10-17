@@ -1,75 +1,95 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select
+from app.db import SessionDep
 from app.models import Pelicula, PeliculaCreate, PeliculaUpdate
 
 router = APIRouter(prefix="/peliculas", tags=["Películas"])
 
-peliculas_db = []
-next_id = 1
-
-
+#  Crear película
 @router.post("/crear", response_model=Pelicula, status_code=201)
-async def crear_pelicula(nueva: PeliculaCreate):
-    global next_id
-    pelicula = Pelicula(id=next_id, **nueva.dict())
-    next_id += 1
-    peliculas_db.append(pelicula)
+def crear_pelicula(session: SessionDep, nueva: PeliculaCreate):
+    pelicula = Pelicula.from_orm(nueva)
+    session.add(pelicula)
+    session.commit()
+    session.refresh(pelicula)
     return pelicula
 
-
+# Listar todas las películas activas
 @router.get("/find/all", response_model=list[Pelicula])
-async def listar_peliculas():
-    return [p for p in peliculas_db if p.activo]
+def listar_peliculas(session: SessionDep):
+    peliculas = session.exec(select(Pelicula).where(Pelicula.activo == True)).all()
+    return peliculas
 
-
+# Obtener una película por ID
 @router.get("/find/{pelicula_id}", response_model=Pelicula)
-async def obtener_pelicula(pelicula_id: int):
-    pelicula = next((p for p in peliculas_db if p.id == pelicula_id), None)
-    if not pelicula:
+def obtener_pelicula(session: SessionDep, pelicula_id: int):
+    pelicula = session.get(Pelicula, pelicula_id)
+    if not pelicula or not pelicula.activo:
         raise HTTPException(status_code=404, detail="Película no encontrada")
     return pelicula
 
-
-@router.get("/search")
-async def buscar_peliculas(Nombre: str):
-    resultados = [p for p in peliculas_db if Nombre.lower() in p.titulo.lower()]
+# Buscar película por nombre
+@router.get("/search", response_model=list[Pelicula])
+async def buscar_peliculas(nombre: str, session: SessionDep):
+    stmt = select(Pelicula).where(
+        Pelicula.titulo.like(f"%{nombre}%"),  # SQLite usa LIKE
+        Pelicula.activo == True
+    )
+    resultados = session.exec(stmt).all()
     if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron películas con ese término")
+        raise HTTPException(status_code=404, detail="No se encontraron películas con ese nombre")
     return resultados
 
-@router.get("/filter")
-async def filtrar_por_genero(genero: str):
-    filtradas = [p for p in peliculas_db if p.genero.lower() == genero.lower()]
+
+
+#  Filtrar por género
+@router.get("/filter", response_model=list[Pelicula])
+def filtrar_por_genero(session: SessionDep, genero: str = Query(..., description="Filtrar por género")):
+    filtradas = session.exec(
+        select(Pelicula).where(Pelicula.genero.ilike(f"%{genero}%"), Pelicula.activo == True)
+    ).all()
     return filtradas
 
 
+# Actualizar película
 @router.put("/update/{pelicula_id}", response_model=Pelicula)
-async def actualizar_pelicula(pelicula_id: int, datos: PeliculaUpdate):
-    pelicula = next((p for p in peliculas_db if p.id == pelicula_id), None)
+def actualizar_pelicula(session: SessionDep, pelicula_id: int, datos: PeliculaUpdate):
+    pelicula = session.get(Pelicula, pelicula_id)
     if not pelicula:
         raise HTTPException(status_code=404, detail="Película no encontrada")
+
     for key, value in datos.dict(exclude_unset=True).items():
         setattr(pelicula, key, value)
+
+    session.add(pelicula)
+    session.commit()
+    session.refresh(pelicula)
     return pelicula
 
-
+# Eliminar (mover a papelera)
 @router.delete("/kill/{pelicula_id}")
-async def eliminar_pelicula(pelicula_id: int):
-    pelicula = next((p for p in peliculas_db if p.id == pelicula_id), None)
+def eliminar_pelicula(session: SessionDep, pelicula_id: int):
+    pelicula = session.get(Pelicula, pelicula_id)
     if not pelicula:
         raise HTTPException(status_code=404, detail="Película no encontrada")
     pelicula.activo = False
+    session.add(pelicula)
+    session.commit()
     return {"mensaje": f"La película '{pelicula.titulo}' fue movida a la papelera."}
 
-
+#Ver papelera
 @router.get("/trash", response_model=list[Pelicula])
-async def listar_papelera():
-    return [p for p in peliculas_db if not p.activo]
+def listar_papelera(session: SessionDep):
+    papelera = session.exec(select(Pelicula).where(Pelicula.activo == False)).all()
+    return papelera
 
-
+# Restaurar película eliminada
 @router.put("/restore/{pelicula_id}")
-async def restaurar_pelicula(pelicula_id: int):
-    pelicula = next((p for p in peliculas_db if p.id == pelicula_id and not p.activo), None)
-    if not pelicula:
+def restaurar_pelicula(session: SessionDep, pelicula_id: int):
+    pelicula = session.get(Pelicula, pelicula_id)
+    if not pelicula or pelicula.activo:
         raise HTTPException(status_code=404, detail="Película no encontrada o ya activa")
     pelicula.activo = True
+    session.add(pelicula)
+    session.commit()
     return {"mensaje": f"La película '{pelicula.titulo}' ha sido restaurada."}

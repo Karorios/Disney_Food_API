@@ -1,11 +1,15 @@
 from fastapi import FastAPI
+from app.db import crear_tablas
 from app.routers import peliculas, platos, restaurantes, recetas, reportes
+
 
 app = FastAPI(
     title="Disney Foods API",
     version="2.0",
     description="API para gestionar películas de Disney, los platos inspirados en ellas, restaurantes y recetas."
 )
+
+crear_tablas()
 
 app.include_router(peliculas.router)
 app.include_router(platos.router)
@@ -14,10 +18,11 @@ app.include_router(recetas.router)
 app.include_router(reportes.router)
 
 
+
 @app.get("/")
 def inicio():
     return {
-        "mensaje": "Bienvenido a la Disney Foods API ",
+        "mensaje": "Bienvenido a la Disney Foods API",
         "documentacion": "/docs",
         "mapa_endpoints": "/mapa"
     }

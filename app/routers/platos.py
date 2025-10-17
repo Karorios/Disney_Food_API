@@ -1,76 +1,90 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select
 from app.models import Plato, PlatoCreate, PlatoUpdate
+from app.db import SessionDep
 
 router = APIRouter(prefix="/platos", tags=["Platos"])
 
-platos_db = []
-next_id = 1
-
 
 @router.post("/crear", response_model=Plato, status_code=201)
-async def crear_plato(nuevo: PlatoCreate):
-    global next_id
-    plato = Plato(id=next_id, **nuevo.dict())
-    next_id += 1
-    platos_db.append(plato)
-    return plato
+async def crear_plato(plato_data: PlatoCreate, session: SessionDep):
+    nuevo = Plato.from_orm(plato_data)
+    session.add(nuevo)
+    session.commit()
+    session.refresh(nuevo)
+    return nuevo
 
 
 @router.get("/find/all", response_model=list[Plato])
-async def listar_platos():
-    return [p for p in platos_db if p.activo]
+async def listar_platos(session: SessionDep):
+    return session.exec(select(Plato).where(Plato.activo == True)).all()
 
 
 @router.get("/find/{plato_id}", response_model=Plato)
-async def obtener_plato(plato_id: int):
-    plato = next((p for p in platos_db if p.id == plato_id), None)
+async def obtener_plato(plato_id: int, session: SessionDep):
+    plato = session.get(Plato, plato_id)
     if not plato:
         raise HTTPException(status_code=404, detail="Plato no encontrado")
     return plato
 
 
-@router.get("/search")
-async def buscar_platos(Nombre_plato: str):
-    resultados = [p for p in platos_db if Nombre_plato.lower() in p.nombre.lower()]
+@router.get("/search", response_model=list[Plato])
+async def buscar_platos(nombre: str, session: SessionDep):
+    stmt = select(Plato).where(
+        Plato.nombre.like(f"%{nombre}%"),
+        Plato.activo == True
+    )
+    resultados = session.exec(stmt).all()
     if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron platos con ese término")
+        raise HTTPException(status_code=404, detail="No se encontraron platos con ese nombre")
     return resultados
 
 
-@router.get("/filter")
-async def filtrar_por_tipo(tipo: str):
-    filtrados = [p for p in platos_db if p.tipo.lower() == tipo.lower()]
-    return filtrados
+@router.get("/filter", response_model=list[Plato])
+async def filtrar_por_tipo(tipo: str, session: SessionDep):
+    return session.exec(
+        select(Plato).where(Plato.tipo.ilike(f"%{tipo}%"), Plato.activo == True)
+    ).all()
 
 
 @router.put("/update/{plato_id}", response_model=Plato)
-async def actualizar_plato(plato_id: int, datos: PlatoUpdate):
-    plato = next((p for p in platos_db if p.id == plato_id), None)
+async def actualizar_plato(plato_id: int, data: PlatoUpdate, session: SessionDep):
+    plato = session.get(Plato, plato_id)
     if not plato:
         raise HTTPException(status_code=404, detail="Plato no encontrado")
-    for key, value in datos.dict(exclude_unset=True).items():
+
+    datos = data.dict(exclude_unset=True)
+    for key, value in datos.items():
         setattr(plato, key, value)
+
+    session.add(plato)
+    session.commit()
+    session.refresh(plato)
     return plato
 
 
 @router.delete("/kill/{plato_id}")
-async def eliminar_plato(plato_id: int):
-    plato = next((p for p in platos_db if p.id == plato_id), None)
+async def eliminar_plato(plato_id: int, session: SessionDep):
+    plato = session.get(Plato, plato_id)
     if not plato:
         raise HTTPException(status_code=404, detail="Plato no encontrado")
     plato.activo = False
+    session.add(plato)
+    session.commit()
     return {"mensaje": f"El plato '{plato.nombre}' fue movido a la papelera."}
 
 
 @router.get("/trash", response_model=list[Plato])
-async def listar_papelera():
-    return [p for p in platos_db if not p.activo]
+async def listar_papelera(session: SessionDep):
+    return session.exec(select(Plato).where(Plato.activo == False)).all()
 
 
 @router.put("/restore/{plato_id}")
-async def restaurar_plato(plato_id: int):
-    plato = next((p for p in platos_db if p.id == plato_id and not p.activo), None)
+async def restaurar_plato(plato_id: int, session: SessionDep):
+    plato = session.get(Plato, plato_id)
     if not plato:
         raise HTTPException(status_code=404, detail="Plato no encontrado o ya activo")
     plato.activo = True
+    session.add(plato)
+    session.commit()
     return {"mensaje": f"El plato '{plato.nombre}' ha sido restaurado."}

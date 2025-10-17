@@ -1,109 +1,114 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select
+from app.models import Restaurante, RestauranteCreate, RestauranteUpdate
+from app.db import SessionDep
 
 router = APIRouter(prefix="/restaurantes", tags=["Restaurantes"])
 
-# ---- MODELOS ----
-class RestauranteBase(BaseModel):
-    nombre: str
-    ubicacion: str
-    tipo: str
-    especialidad: Optional[str] = None
 
-
-class Restaurante(RestauranteBase):
-    id: int
-    activo: bool = True
-
-
-restaurantes_db: List[Restaurante] = []
-contador = 1
-
-
-
-# CREATE
+# Crear restaurante
 @router.post("/crear", response_model=Restaurante, status_code=201)
-def crear_restaurante(data: RestauranteBase):
-    global contador
-    nuevo = Restaurante(id=contador, **data.dict(), activo=True)
-    restaurantes_db.append(nuevo)
-    contador += 1
+async def crear_restaurante(data: RestauranteCreate, session: SessionDep):
+    nuevo = Restaurante(**data.dict())
+    session.add(nuevo)
+    session.commit()
+    session.refresh(nuevo)
     return nuevo
 
 
-# FIND ALL (solo activos)
-@router.get("/find/all", response_model=List[Restaurante])
-def listar_restaurantes():
-    return [r for r in restaurantes_db if r.activo]
+# 📋 Listar todos los restaurantes activos
+@router.get("/find/all", response_model=list[Restaurante])
+async def listar_restaurantes(session: SessionDep):
+    return session.exec(select(Restaurante).where(Restaurante.activo == True)).all()
 
 
-# FIND BY ID
+# Buscar restaurante por ID
 @router.get("/find/{restaurante_id}", response_model=Restaurante)
-def obtener_restaurante(restaurante_id: int):
-    restaurante = next((r for r in restaurantes_db if r.id == restaurante_id and r.activo), None)
+async def obtener_restaurante(restaurante_id: int, session: SessionDep):
+    restaurante = session.get(Restaurante, restaurante_id)
     if not restaurante:
-        raise HTTPException(status_code=404, detail="Restaurante no encontrado o inactivo.")
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
     return restaurante
 
 
-# SEARCH
-@router.get("/search", response_model=List[Restaurante])
-def buscar_restaurantes(nombre: Optional[str] = None):
-    if not nombre:
-        raise HTTPException(status_code=400, detail="Debe proporcionar un nombre para buscar.")
-    resultados = [r for r in restaurantes_db if nombre.lower() in r.nombre.lower() and r.activo]
+# Buscar restaurante por nombre
+@router.get("/search", response_model=list[Restaurante])
+async def buscar_restaurantes(
+    nombre: str = Query(..., description="Nombre o parte del nombre del restaurante"),
+    session: SessionDep = None
+):
+    resultados = session.exec(
+        select(Restaurante).where(Restaurante.nombre.like(f"%{nombre}%"), Restaurante.activo == True)
+    ).all()
     if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron restaurantes con ese nombre.")
+        raise HTTPException(status_code=404, detail="No se encontraron restaurantes con ese nombre")
     return resultados
 
 
+# Filtrar restaurante por ubicación o tipo
+@router.get("/filter", response_model=list[Restaurante])
+async def filtrar_restaurantes(
+    ubicacion: str | None = Query(None, description="Filtrar por ubicación"),
+    tipo: str | None = Query(None, description="Filtrar por tipo"),
+    session: SessionDep = None
+):
+    query = select(Restaurante).where(Restaurante.activo == True)
 
-@router.get("/filter", response_model=List[Restaurante])
-def filtrar_restaurantes(ubicacion: Optional[str] = None, tipo: Optional[str] = None):
-    resultados = [r for r in restaurantes_db if r.activo]
     if ubicacion:
-        resultados = [r for r in resultados if ubicacion.lower() in r.ubicacion.lower()]
+        query = query.where(Restaurante.ubicacion.like(f"%{ubicacion}%"))
     if tipo:
-        resultados = [r for r in resultados if tipo.lower() in r.tipo.lower()]
+        query = query.where(Restaurante.tipo.like(f"%{tipo}%"))
+
+    resultados = session.exec(query).all()
+    if not resultados:
+        raise HTTPException(status_code=404, detail="No se encontraron restaurantes con esos filtros")
     return resultados
 
 
-# TRASH
-@router.get("/trash", response_model=List[Restaurante])
-def listar_eliminados():
-    return [r for r in restaurantes_db if not r.activo]
-
-
-# UPDATE
+# Actualizar restaurante
 @router.put("/update/{restaurante_id}", response_model=Restaurante)
-def actualizar_restaurante(restaurante_id: int, data: RestauranteBase):
-    for r in restaurantes_db:
-        if r.id == restaurante_id and r.activo:
-            r.nombre = data.nombre
-            r.ubicacion = data.ubicacion
-            r.tipo = data.tipo
-            r.especialidad = data.especialidad
-            return r
-    raise HTTPException(status_code=404, detail="Restaurante no encontrado o inactivo.")
+async def actualizar_restaurante(restaurante_id: int, data: RestauranteUpdate, session: SessionDep):
+    restaurante = session.get(Restaurante, restaurante_id)
+    if not restaurante:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    datos = data.dict(exclude_unset=True)
+    for key, value in datos.items():
+        setattr(restaurante, key, value)
+
+    session.add(restaurante)
+    session.commit()
+    session.refresh(restaurante)
+    return restaurante
 
 
-# DELETE
+# Eliminar (mover a papelera)
 @router.delete("/kill/{restaurante_id}")
-def eliminar_restaurante(restaurante_id: int):
-    for r in restaurantes_db:
-        if r.id == restaurante_id and r.activo:
-            r.activo = False
-            return {"mensaje": f"Restaurante '{r.nombre}' movido a la papelera."}
-    raise HTTPException(status_code=404, detail="Restaurante no encontrado o ya eliminado.")
+async def eliminar_restaurante(restaurante_id: int, session: SessionDep):
+    restaurante = session.get(Restaurante, restaurante_id)
+    if not restaurante:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    restaurante.activo = False
+    session.add(restaurante)
+    session.commit()
+    return {"mensaje": f"Restaurante '{restaurante.nombre}' movido a la papelera."}
 
 
-# RESTORE
+# Restaurar desde la papelera
 @router.put("/restore/{restaurante_id}")
-def restaurar_restaurante(restaurante_id: int):
-    for r in restaurantes_db:
-        if r.id == restaurante_id and not r.activo:
-            r.activo = True
-            return {"mensaje": f"Restaurante '{r.nombre}' restaurado exitosamente."}
-    raise HTTPException(status_code=404, detail="Restaurante no encontrado o ya activo.")
+async def restaurar_restaurante(restaurante_id: int, session: SessionDep):
+    restaurante = session.get(Restaurante, restaurante_id)
+    if not restaurante:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado o ya activo")
+
+    restaurante.activo = True
+    session.add(restaurante)
+    session.commit()
+    return {"mensaje": f"Restaurante '{restaurante.nombre}' restaurado exitosamente."}
+
+
+# Listar los eliminados
+@router.get("/trash", response_model=list[Restaurante])
+async def listar_papelera(session: SessionDep):
+    return session.exec(select(Restaurante).where(Restaurante.activo == False)).all()
