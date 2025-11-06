@@ -21,16 +21,16 @@ Cada modelo cuenta con operaciones CRUD completas, manejo de estado (activo/inac
 
 ## ⚙️ Funcionalidades
 
-✅ CRUD completo para cada modelo  
-✅ Eliminación lógica (los datos no se borran del todo, solo se marcan como "Inactivos")  
-✅ Endpoints para ver la “papelera” y restaurar registros  
-✅ Filtros y búsquedas por distintos atributos  
-✅ Manejo de errores y excepciones  
-✅ Documentación automática en `/docs`
+CRUD completo para cada modelo  
+Eliminación lógica (los datos no se borran del todo, solo se marcan como "Inactivos")  
+Endpoints para ver la “papelera” y restaurar registros  
+Filtros y búsquedas por distintos atributos  
+Manejo de errores y excepciones  
+Documentación automática en `/docs`
 
 ---
 
-## 🧭 Mapa de Endpoints
+## Mapa de Endpoints
 
 | Categoría | Acción | Endpoint | Método |
 |------------|--------|-----------|--------|

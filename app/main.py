@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
 from app.db import crear_tablas
 from app.routers import peliculas, platos, restaurantes, recetas, reportes
-
 
 app = FastAPI(
     title="Disney Foods API",
@@ -17,16 +20,17 @@ app.include_router(restaurantes.router)
 app.include_router(recetas.router)
 app.include_router(reportes.router)
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
-
-@app.get("/")
+@app.get("")
 def inicio():
     return {
         "mensaje": "Bienvenido a la Disney Foods API",
         "documentacion": "/docs",
-        "mapa_endpoints": "/mapa"
-    }
+        "mapa_endpoints": "/mapa",
 
+    }
 
 @app.get("/mapa")
 def mapa_endpoints():
@@ -79,3 +83,16 @@ def mapa_endpoints():
             "Exportar CSV": "/reportes/exportar_csv"
         }
     }
+
+@app.get("/", response_class=HTMLResponse)
+async def mostrar_plato(request: Request):
+    data = {
+        "nombre": "Ratatouille",
+        "descripcion": "Un clásico plato provenzal francés con berenjena, calabacín, pimientos y tomate, hecho famoso por la película de Disney-Pixar.",
+        "origen": "Película: Ratatouille (2007)",
+        "imagen": "https://i.ytimg.com/vi/M8jQZEIdGr8/maxresdefault.jpg"
+    }
+    return templates.TemplateResponse(
+        "plato.html",
+        {"request": request, "plato": data}
+    )
