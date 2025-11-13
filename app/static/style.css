@@ -1,10 +1,28 @@
 body {
-    background-color: #fffaf0;
+    margin: 0;
+    background-color: #f4f4f4;
+    font-family: Arial, sans-serif;
+    text-align: center;
 }
-h1 {
-    color: #b03060;
+
+header, footer {
+    text-align: center;
 }
-img {
+
+a {
+    color: #0066cc;
+}
+
+.platos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.plato {
+    background-color: white;
+    padding: 10px;
     border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
