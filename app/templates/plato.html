@@ -1,14 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ plato.nombre }} - Disney Foods</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body style="font-family: Arial; background-color: #f4f4f4; text-align: center;">
+{% extends 'base.html' %}
+
+{% block title %}{{ plato.nombre }} - Disney Foods{% endblock %}
+
+{% block content %}
     <h1>{{ plato.nombre }}</h1>
     <p><strong>Descripción:</strong> {{ plato.descripcion }}</p>
     <p><strong>Origen:</strong> {{ plato.origen }}</p>
-    <img src="{{ plato.imagen }}" alt="{{ plato.nombre }}" width="420">
-</body>
-</html>
+    <img src="{{ plato.imagen }}" alt="{{ plato.nombre }}" style="width:420px; margin-top:20px;">
+{% endblock %}

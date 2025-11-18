@@ -9,7 +9,7 @@ from app.routers import peliculas, platos, restaurantes, recetas, reportes
 app = FastAPI(
     title="Disney Foods API",
     version="2.0",
-    description="API para gestionar películas de Disney, los platos inspirados en ellas, restaurantes y recetas."
+    description="API para gestionar peliculas de Disney, los platos inspirados en ellas, restaurantes y recetas."
 )
 
 crear_tablas()
@@ -23,68 +23,13 @@ app.include_router(reportes.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
-@app.get("")
-def inicio():
-    return {
-        "mensaje": "Bienvenido a la Disney Foods API",
-        "documentacion": "/docs",
-        "mapa_endpoints": "/mapa",
-
-    }
-
-@app.get("/mapa")
-def mapa_endpoints():
-    return {
-        "Películas": {
-            "Crear": "/peliculas/crear",
-            "Consultar todas": "/peliculas/find/all",
-            "Consultar por ID": "/peliculas/find/{pelicula_id}",
-            "Actualizar": "/peliculas/update/{pelicula_id}",
-            "Eliminar": "/peliculas/kill/{pelicula_id}",
-            "Restaurar": "/peliculas/restore/{pelicula_id}",
-            "Papelera": "/peliculas/trash",
-            "Buscar": "/peliculas/search?q=",
-            "Filtrar": "/peliculas/filter?genero="
-        },
-        "Platos": {
-            "Crear": "/platos/crear",
-            "Consultar todos": "/platos/find/all",
-            "Consultar por ID": "/platos/find/{plato_id}",
-            "Actualizar": "/platos/update/{plato_id}",
-            "Eliminar": "/platos/kill/{plato_id}",
-            "Restaurar": "/platos/restore/{plato_id}",
-            "Papelera": "/platos/trash",
-            "Buscar": "/platos/search?q=",
-            "Filtrar": "/platos/filter?tipo="
-        },
-        "Restaurantes": {
-            "Crear": "/restaurantes/crear",
-            "Consultar todos": "/restaurantes/find/all",
-            "Consultar por ID": "/restaurantes/find/{restaurante_id}",
-            "Actualizar": "/restaurantes/update/{restaurante_id}",
-            "Eliminar": "/restaurantes/kill/{restaurante_id}",
-            "Restaurar": "/restaurantes/restore/{restaurante_id}",
-            "Papelera": "/restaurantes/trash",
-            "Buscar": "/restaurantes/search?nombre_restaurante=",
-            "Filtrar": "/restaurantes/filter?ubicacion="
-        },
-        "Recetas": {
-            "Crear": "/recetas/crear",
-            "Consultar todas": "/recetas/find/all",
-            "Consultar por ID": "/recetas/find/{receta_id}",
-            "Actualizar": "/recetas/update/{receta_id}",
-            "Eliminar": "/recetas/kill/{receta_id}",
-            "Restaurar": "/recetas/restore/{receta_id}",
-            "Papelera": "/recetas/trash",
-            "Buscar": "/recetas/search?nombre_receta=",
-            "Filtrar": "/recetas/filter?dificultad="
-        },
-        "Reportes": {
-            "Exportar CSV": "/reportes/exportar_csv"
-        }
-    }
-
+# Página principal
 @app.get("/", response_class=HTMLResponse)
+async def inicio(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# Página para mostrar un plato
+@app.get("/plato", response_class=HTMLResponse)
 async def mostrar_plato(request: Request):
     data = {
         "nombre": "Ratatouille",
@@ -92,7 +37,54 @@ async def mostrar_plato(request: Request):
         "origen": "Película: Ratatouille (2007)",
         "imagen": "https://i.ytimg.com/vi/M8jQZEIdGr8/maxresdefault.jpg"
     }
-    return templates.TemplateResponse(
-        "plato.html",
-        {"request": request, "plato": data}
-    )
+    return templates.TemplateResponse("plato.html", {"request": request, "plato": data})
+
+@app.get("/mapa", response_class=HTMLResponse)
+async def mapa_endpoints(request: Request):
+    endpoints = {
+        "Películas": [
+            {"accion": "Crear", "url": "/peliculas/crear"},
+            {"accion": "Consultar todas", "url": "/peliculas/find/all"},
+            {"accion": "Consultar por ID", "url": "/peliculas/find/{pelicula_id}"},
+            {"accion": "Actualizar", "url": "/peliculas/update/{pelicula_id}"},
+            {"accion": "Eliminar", "url": "/peliculas/kill/{pelicula_id}"},
+            {"accion": "Restaurar", "url": "/peliculas/restore/{pelicula_id}"},
+            {"accion": "Papelera", "url": "/peliculas/trash"},
+            {"accion": "Buscar", "url": "/peliculas/search?q="},
+            {"accion": "Filtrar", "url": "/peliculas/filter?genero="}
+        ],
+        "Platos": [
+            {"accion": "Crear", "url": "/platos/crear"},
+            {"accion": "Consultar todos", "url": "/platos/find/all"},
+            {"accion": "Consultar por ID", "url": "/platos/find/{plato_id}"},
+            {"accion": "Actualizar", "url": "/platos/update/{plato_id}"},
+            {"accion": "Eliminar", "url": "/platos/kill/{plato_id}"},
+            {"accion": "Restaurar", "url": "/platos/restore/{plato_id}"},
+            {"accion": "Papelera", "url": "/platos/trash"},
+            {"accion": "Buscar", "url": "/platos/search?q="},
+            {"accion": "Filtrar", "url": "/platos/filter?tipo="}
+        ],
+        "Restaurantes": [
+            {"accion": "Crear", "url": "/restaurantes/crear"},
+            {"accion": "Consultar todos", "url": "/restaurantes/find/all"},
+            {"accion": "Consultar por ID", "url": "/restaurantes/find/{restaurante_id}"},
+            {"accion": "Actualizar", "url": "/restaurantes/update/{restaurante_id}"},
+            {"accion": "Eliminar", "url": "/restaurantes/kill/{restaurante_id}"},
+            {"accion": "Restaurar", "url": "/restaurantes/restore/{restaurante_id}"},
+            {"accion": "Papelera", "url": "/restaurantes/trash"},
+            {"accion": "Buscar", "url": "/restaurantes/search?nombre_restaurante="},
+            {"accion": "Filtrar", "url": "/restaurantes/filter?ubicacion="}
+        ],
+        "Recetas": [
+            {"accion": "Crear", "url": "/recetas/crear"},
+            {"accion": "Consultar todas", "url": "/recetas/find/all"},
+            {"accion": "Consultar por ID", "url": "/recetas/find/{receta_id}"},
+            {"accion": "Actualizar", "url": "/recetas/update/{receta_id}"},
+            {"accion": "Eliminar", "url": "/recetas/kill/{receta_id}"},
+            {"accion": "Restaurar", "url": "/recetas/restore/{receta_id}"},
+            {"accion": "Papelera", "url": "/recetas/trash"},
+            {"accion": "Buscar", "url": "/recetas/search?nombre_receta="},
+            {"accion": "Filtrar", "url": "/recetas/filter?dificultad="}
+        ]
+    }
+    return templates.TemplateResponse("mapa.html", {"request": request, "endpoints": endpoints})

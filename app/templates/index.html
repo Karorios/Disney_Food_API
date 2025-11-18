@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - Disney Foods{% endblock %}
+
+{% block content %}
+    <h1>Bienvenido a la Disney Foods API</h1>
+    <p style="color: #b30000;">Explora platos, películas, restaurantes y recetas inspiradas en Disney.</p>
+    <img src="{{ url_for('static', path='disney-foods.jpg') }}" alt="Disney Foods" style="width: 300px; margin-top: 20px;">
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Mapa de Endpoints - Disney Foods{% endblock %}
+
+{% block content %}
+<h1>Mapa de Endpoints</h1>
+<div class="grid-container">
+    {% for categoria, acciones in endpoints.items() %}
+    <div class="card">
+        <h2>{{ categoria }}</h2>
+        <ul>
+            {% for item in acciones %}
+            <li><strong>{{ item.accion }}:</strong> <code>{{ item.url }}</code></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
