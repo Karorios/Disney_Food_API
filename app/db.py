@@ -7,7 +7,9 @@ DATABASE_URL = os.getenv("POSTGRESQL_ADDON_URI")
 
 # Si no existe, intenta usar SUPABASE
 if not DATABASE_URL:
-    DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+    DATABASE_URL = os.getenv("POSTGRESQL_ADDON_URI")
+
+    print("🔍 DATABASE_URL ->", DATABASE_URL)
 
 # Si tampoco existe, usa sqlite local
 if not DATABASE_URL:
