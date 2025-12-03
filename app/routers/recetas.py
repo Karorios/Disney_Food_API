@@ -1,14 +1,22 @@
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import select
-from app.models import Receta, RecetaCreate, RecetaUpdate
+
 from app.db import SessionDep
+from app.models import Receta, RecetaCreate, RecetaUpdate
 
 router = APIRouter(prefix="/recetas", tags=["Recetas"])
 
 
 @router.post("/crear", response_model=Receta, status_code=201)
 async def crear_receta(data: RecetaCreate, session: SessionDep):
-    nueva = Receta.from_orm(data)
+    """
+    Crea una nueva receta asociada a una película.
+    """
+    try:
+        nueva = Receta.from_orm(data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Datos de receta inválidos: {e}")
+
     session.add(nueva)
     session.commit()
     session.refresh(nueva)
@@ -17,13 +25,16 @@ async def crear_receta(data: RecetaCreate, session: SessionDep):
 
 @router.get("/find/all", response_model=list[Receta])
 async def listar_recetas(session: SessionDep):
+    """
+    Lista todas las recetas activas.
+    """
     return session.exec(select(Receta).where(Receta.activo == True)).all()
 
 
 @router.get("/find/{receta_id}", response_model=Receta)
 async def obtener_receta(receta_id: int, session: SessionDep):
     receta = session.get(Receta, receta_id)
-    if not receta:
+    if not receta or not receta.activo:
         raise HTTPException(status_code=404, detail="Receta no encontrada")
     return receta
 
@@ -31,13 +42,15 @@ async def obtener_receta(receta_id: int, session: SessionDep):
 @router.get("/search", response_model=list[Receta])
 async def buscar_recetas(
     nombre: str = Query(..., description="Nombre o parte del nombre de la receta"),
-    session: SessionDep = None
+    session: SessionDep = None,
 ):
     resultados = session.exec(
         select(Receta).where(Receta.nombre.ilike(f"%{nombre}%"), Receta.activo == True)
     ).all()
     if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron recetas con ese término")
+        raise HTTPException(
+            status_code=404, detail="No se encontraron recetas con ese término"
+        )
     return resultados
 
 
@@ -49,7 +62,7 @@ async def actualizar_receta(receta_id: int, data: RecetaUpdate, session: Session
 
     datos = data.model_dump(exclude_unset=True)
 
-    # Manejo especial si los ingredientes vienen como lista o string
+    # Manejo especial de ingredientes como lista JSON
     if "ingredientes" in datos and isinstance(datos["ingredientes"], list):
         receta.ingredientes = datos["ingredientes"]
         del datos["ingredientes"]
@@ -77,8 +90,10 @@ async def eliminar_receta(receta_id: int, session: SessionDep):
 @router.put("/restore/{receta_id}")
 async def restaurar_receta(receta_id: int, session: SessionDep):
     receta = session.get(Receta, receta_id)
-    if not receta:
-        raise HTTPException(status_code=404, detail="Receta no encontrada o ya activa")
+    if not receta or receta.activo:
+        raise HTTPException(
+            status_code=404, detail="Receta no encontrada o ya activa"
+        )
     receta.activo = True
     session.add(receta)
     session.commit()

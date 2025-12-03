@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Disney Foods{% endblock %}
+
+{% block content %}
+<section class="hero is-dark is-small">
+    <div class="hero-body">
+        <p class="title has-text-danger-light">
+            Dashboard de Recetas
+        </p>
+        <p class="subtitle has-text-white">
+            Visualiza el número de recetas por película y el tiempo promedio de preparación.
+        </p>
+    </div>
+</section>
+
+<div class="section">
+    <div class="columns">
+        <div class="column is-6">
+            <div class="box">
+                <h2 class="title is-5 has-text-danger">Recetas por película</h2>
+                <canvas id="chart-recetas-por-pelicula"></canvas>
+            </div>
+        </div>
+        <div class="column is-6">
+            <div class="box">
+                <h2 class="title is-5 has-text-danger">Tiempo promedio de preparación</h2>
+                <canvas id="chart-tiempo-promedio"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+    import { getEstadisticas, showToast } from "{{ url_for('static', path='js/api.js') }}";
+
+    async function initDashboard() {
+        try {
+            const data = await getEstadisticas();
+            const labels = data.peliculas;
+            const recetasCount = data.recetas_por_pelicula;
+            const tiemposPromedio = data.tiempo_promedio_preparacion;
+
+            const ctx1 = document.getElementById("chart-recetas-por-pelicula").getContext("2d");
+            new Chart(ctx1, {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Número de recetas",
+                        data: recetasCount,
+                        backgroundColor: "rgba(220, 38, 38, 0.6)",
+                        borderColor: "rgba(220, 38, 38, 1)",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById("chart-tiempo-promedio").getContext("2d");
+            new Chart(ctx2, {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Tiempo promedio (minutos)",
+                        data: tiemposPromedio,
+                        borderColor: "rgba(248, 250, 252, 1)",
+                        backgroundColor: "rgba(248, 250, 252, 0.2)",
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            showToast("Error cargando estadísticas: " + e.message, "is-danger");
+        }
+    }
+
+    initDashboard();
+</script>
+{% endblock %}
+
+

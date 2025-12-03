@@ -1,0 +1,10 @@
+Entidad,Nombre/Título,Campo adicional,Activo
+Pelicula,Encanto,Animacion,True
+Pelicula,Coco,Infantil,True
+Pelicula,Encanto,Animacion,False
+Plato,Tamales de Coco,Dulce,True
+Plato,Arepa con queso,Salado,True
+Restaurante,La Casa Madrigal,Familiar,True
+Restaurante,La Casa de Miguel,Temático,True
+Receta,Arepa con queso,"['Harina', 'Queso', 'Sal', 'Mantequilla', 'Agua']",True
+Receta,Tamales dulces de Coco,"['Harina de maíz', 'Azúcar', 'Coco rallado', 'Leche', 'Canela']",True

@@ -1,9 +1,39 @@
-<header style="background-color: #333; color: white; padding: 15px;">
-    <h2>Disney Foods API</h2>
-    <nav>
-        /Inicio - </a>
-        /mapa: Mapa Endpoints - </a>
-        /docs: Documentación - </a>
-        /plato</a>
-    </nav>
-</header>
+<nav class="navbar has-background-black" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+        <a class="navbar-item has-text-weight-bold has-text-white" href="/">
+            Disney Foods API
+        </a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMain">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <div id="navbarMain" class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item has-text-danger-light" href="/">Inicio</a>
+            <a class="navbar-item has-text-danger-light" href="/mapa">Mapa de endpoints</a>
+            <a class="navbar-item has-text-danger-light" href="/docs">Docs API</a>
+            <a class="navbar-item has-text-danger-light" href="/plato">Plato destacado</a>
+            <a class="navbar-item has-text-danger-light" href="/peliculas-ui">Películas</a>
+            <a class="navbar-item has-text-danger-light" href="/recetas-ui">Recetas</a>
+            <a class="navbar-item has-text-danger-light" href="/dashboard">Dashboard</a>
+        </div>
+    </div>
+</nav>
+
+<script>
+// Toggle navbar burger (Bulma)
+document.addEventListener('DOMContentLoaded', () => {
+    const burger = document.querySelector('.navbar-burger');
+    const menu = document.getElementById(burger?.dataset.target || 'navbarMain');
+    if (burger && menu) {
+        burger.addEventListener('click', () => {
+            burger.classList.toggle('is-active');
+            menu.classList.toggle('is-active');
+        });
+    }
+});
+</script>

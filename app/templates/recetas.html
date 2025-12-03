@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Recetas - Disney Foods{% endblock %}
+
+{% block content %}
+<section class="hero is-danger is-small">
+    <div class="hero-body">
+        <p class="title">
+            Gestión de Recetas
+        </p>
+        <p class="subtitle">
+            Crea recetas mágicas inspiradas en tus películas favoritas.
+        </p>
+    </div>
+</section>
+
+<div class="section">
+    <div class="columns">
+        <div class="column is-6">
+            <div class="box">
+                <h2 class="title is-5 has-text-danger">Crear / editar receta</h2>
+                <form id="form-receta">
+                    <input type="hidden" id="receta-id">
+
+                    <div class="field">
+                        <label class="label">Nombre</label>
+                        <div class="control">
+                            <input class="input" id="receta-nombre" type="text" minlength="1" maxlength="200" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Película</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="receta-pelicula" required>
+                                    <option value="">Selecciona una película</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Descripción</label>
+                        <div class="control">
+                            <textarea class="textarea" id="receta-descripcion" minlength="1" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Ingredientes (uno por línea)</label>
+                        <div class="control">
+                            <textarea class="textarea" id="receta-ingredientes" minlength="1" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Pasos</label>
+                        <div class="control">
+                            <textarea class="textarea" id="receta-pasos" minlength="1" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Tiempo de preparación (minutos)</label>
+                        <div class="control">
+                            <input class="input" id="receta-tiempo" type="number" min="1" max="600" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Imagen (opcional)</label>
+                        <div class="control">
+                            <input class="input" id="receta-imagen" type="file" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control">
+                            <button type="submit" class="button is-danger">Guardar</button>
+                        </div>
+                        <div class="control">
+                            <button type="button" id="btn-limpiar-receta" class="button is-light">Limpiar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="column is-6">
+            <div class="box">
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-5 has-text-danger">Listado de recetas</h2>
+                    </div>
+                    <div class="level-right">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <input class="input" id="receta-buscar" type="text" placeholder="Buscar por nombre...">
+                            </div>
+                            <div class="control">
+                                <button id="btn-buscar-receta" class="button is-danger">Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Película</th>
+                            <th>Tiempo (min)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-recetas-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import {
+        getRecetas,
+        createReceta,
+        updateReceta,
+        deleteReceta,
+        getPeliculas,
+        uploadRecetaImage,
+        showToast
+    } from "{{ url_for('static', path='js/api.js') }}";
+
+    const tbody = document.getElementById("tabla-recetas-body");
+    const form = document.getElementById("form-receta");
+    const inputId = document.getElementById("receta-id");
+    const inputNombre = document.getElementById("receta-nombre");
+    const selectPelicula = document.getElementById("receta-pelicula");
+    const inputDescripcion = document.getElementById("receta-descripcion");
+    const inputIngredientes = document.getElementById("receta-ingredientes");
+    const inputPasos = document.getElementById("receta-pasos");
+    const inputTiempo = document.getElementById("receta-tiempo");
+    const inputImagen = document.getElementById("receta-imagen");
+    const btnLimpiar = document.getElementById("btn-limpiar-receta");
+    const inputBuscar = document.getElementById("receta-buscar");
+    const btnBuscar = document.getElementById("btn-buscar-receta");
+
+    async function cargarPeliculasSelect() {
+        try {
+            const peliculas = await getPeliculas();
+            peliculas.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = `${p.titulo} (${p.anio})`;
+                selectPelicula.appendChild(opt);
+            });
+        } catch (e) {
+            showToast("No se pudieron cargar las películas: " + e.message, "is-danger");
+        }
+    }
+
+    function renderRecetas(recetas) {
+        tbody.innerHTML = "";
+        recetas.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.id}</td>
+                <td>${r.nombre}</td>
+                <td>${r.pelicula ? r.pelicula.titulo : r.pelicula_id}</td>
+                <td>${r.tiempo_preparacion}</td>
+                <td>
+                    <button class="button is-small is-warning btn-editar-receta" data-id="${r.id}">Editar</button>
+                    <button class="button is-small is-danger is-light btn-eliminar-receta" data-id="${r.id}">Borrar</button>
+                </td>
+            `;
+            tr.dataset.receta = JSON.stringify(r);
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function cargarRecetas() {
+        try {
+            const recetas = await getRecetas();
+            renderRecetas(recetas);
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!form.checkValidity()) {
+            showToast("Revisa los campos del formulario.", "is-warning");
+            return;
+        }
+
+        let imagenUrl = null;
+        if (inputImagen.files.length > 0) {
+            try {
+                const res = await uploadRecetaImage(inputImagen.files[0]);
+                imagenUrl = res.url;
+            } catch (e) {
+                showToast("Error subiendo la imagen: " + e.message, "is-danger");
+                return;
+            }
+        }
+
+        const ingredientes = inputIngredientes.value
+            .split("\n")
+            .map(i => i.trim())
+            .filter(i => i.length > 0);
+
+        const payload = {
+            nombre: inputNombre.value.trim(),
+            descripcion: inputDescripcion.value.trim(),
+            ingredientes,
+            pasos: inputPasos.value.trim(),
+            tiempo_preparacion: Number(inputTiempo.value),
+            pelicula_id: Number(selectPelicula.value),
+            imagen_url: imagenUrl || undefined
+        };
+
+        try {
+            if (inputId.value) {
+                await updateReceta(inputId.value, payload);
+                showToast("Receta actualizada correctamente", "is-success");
+            } else {
+                await createReceta(payload);
+                showToast("Receta creada correctamente", "is-success");
+            }
+            form.reset();
+            inputId.value = "";
+            await cargarRecetas();
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    });
+
+    btnLimpiar.addEventListener("click", () => {
+        form.reset();
+        inputId.value = "";
+    });
+
+    tbody.addEventListener("click", async (e) => {
+        const editBtn = e.target.closest(".btn-editar-receta");
+        const deleteBtn = e.target.closest(".btn-eliminar-receta");
+        if (editBtn) {
+            const tr = editBtn.closest("tr");
+            const data = JSON.parse(tr.dataset.receta);
+            inputId.value = data.id;
+            inputNombre.value = data.nombre;
+            selectPelicula.value = data.pelicula_id;
+            inputDescripcion.value = data.descripcion;
+            inputIngredientes.value = (data.ingredientes || []).join("\n");
+            inputPasos.value = data.pasos;
+            inputTiempo.value = data.tiempo_preparacion;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (confirm("¿Seguro que deseas eliminar esta receta?")) {
+                try {
+                    await deleteReceta(id);
+                    showToast("Receta eliminada (enviada a papelera)", "is-success");
+                    await cargarRecetas();
+                } catch (e) {
+                    showToast(e.message, "is-danger");
+                }
+            }
+        }
+    });
+
+    btnBuscar.addEventListener("click", async () => {
+        const termino = inputBuscar.value.trim();
+        if (!termino) {
+            cargarRecetas();
+            return;
+        }
+        try {
+            const res = await fetch(`${window.location.origin}/recetas/search?nombre=${encodeURIComponent(termino)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Error al buscar");
+            renderRecetas(data);
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    });
+
+    await cargarPeliculasSelect();
+    await cargarRecetas();
+</script>
+{% endblock %}
+
+

@@ -1,43 +1,56 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.db import crear_tablas
-from app.routers import peliculas, platos, restaurantes, recetas, reportes
+from app.routers import peliculas, platos, restaurantes, recetas, reportes, imagenes
 
 app = FastAPI(
     title="Disney Foods API",
     version="2.0",
-    description="API para gestionar peliculas de Disney, los platos inspirados en ellas, restaurantes y recetas."
+    description="API para gestionar peliculas de Disney, los platos inspirados en ellas, restaurantes y recetas.",
 )
 
 crear_tablas()
+
+# CORS para frontend (Render u otros dominios)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Ajustar en despliegue si se requiere restringir
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(peliculas.router)
 app.include_router(platos.router)
 app.include_router(restaurantes.router)
 app.include_router(recetas.router)
 app.include_router(reportes.router)
+app.include_router(imagenes.router)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
 
 # Página principal
 @app.get("/", response_class=HTMLResponse)
 async def inicio(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Página para mostrar un plato
+
 @app.get("/plato", response_class=HTMLResponse)
 async def mostrar_plato(request: Request):
     data = {
         "nombre": "Ratatouille",
         "descripcion": "Un clásico plato provenzal francés con berenjena, calabacín, pimientos y tomate, hecho famoso por la película de Disney-Pixar.",
         "origen": "Película: Ratatouille (2007)",
-        "imagen": "https://i.ytimg.com/vi/M8jQZEIdGr8/maxresdefault.jpg"
+        "imagen": "https://i.ytimg.com/vi/M8jQZEIdGr8/maxresdefault.jpg",
     }
     return templates.TemplateResponse("plato.html", {"request": request, "plato": data})
+
 
 @app.get("/mapa", response_class=HTMLResponse)
 async def mapa_endpoints(request: Request):
@@ -84,7 +97,23 @@ async def mapa_endpoints(request: Request):
             {"accion": "Restaurar", "url": "/recetas/restore/{receta_id}"},
             {"accion": "Papelera", "url": "/recetas/trash"},
             {"accion": "Buscar", "url": "/recetas/search?nombre_receta="},
-            {"accion": "Filtrar", "url": "/recetas/filter?dificultad="}
-        ]
+            {"accion": "Filtrar", "url": "/recetas/filter?dificultad="},
+        ],
     }
     return templates.TemplateResponse("mapa.html", {"request": request, "endpoints": endpoints})
+
+
+# Rutas de frontend HTML
+@app.get("/peliculas-ui", response_class=HTMLResponse)
+async def peliculas_ui(request: Request):
+    return templates.TemplateResponse("peliculas.html", {"request": request})
+
+
+@app.get("/recetas-ui", response_class=HTMLResponse)
+async def recetas_ui(request: Request):
+    return templates.TemplateResponse("recetas.html", {"request": request})
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})

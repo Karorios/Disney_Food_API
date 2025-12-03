@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Películas - Disney Foods{% endblock %}
+
+{% block content %}
+<section class="hero is-black is-small">
+    <div class="hero-body">
+        <p class="title has-text-danger-light">
+            Gestión de Películas
+        </p>
+        <p class="subtitle has-text-white">
+            Crea, edita y gestiona las películas de Disney.
+        </p>
+    </div>
+</section>
+
+<div class="section">
+    <div class="columns">
+        <div class="column is-5">
+            <div class="box">
+                <h2 class="title is-5 has-text-danger">Crear / editar película</h2>
+                <form id="form-pelicula">
+                    <input type="hidden" id="pelicula-id">
+
+                    <div class="field">
+                        <label class="label">Título</label>
+                        <div class="control">
+                            <input class="input" id="pelicula-titulo" type="text" minlength="1" maxlength="200" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Año</label>
+                        <div class="control">
+                            <input class="input" id="pelicula-anio" type="number" min="1900" max="2100" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Género</label>
+                        <div class="control">
+                            <input class="input" id="pelicula-genero" type="text" minlength="1" maxlength="100" required>
+                        </div>
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control">
+                            <button type="submit" class="button is-danger">Guardar</button>
+                        </div>
+                        <div class="control">
+                            <button type="button" id="btn-limpiar-pelicula" class="button is-light">Limpiar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="column is-7">
+            <div class="box">
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-5 has-text-danger">Listado de películas</h2>
+                    </div>
+                    <div class="level-right">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <input class="input" id="pelicula-buscar" type="text" placeholder="Buscar por título...">
+                            </div>
+                            <div class="control">
+                                <button id="btn-buscar-pelicula" class="button is-danger">Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Año</th>
+                            <th>Género</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-peliculas-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import { getPeliculas, createPelicula, updatePelicula, deletePelicula, showToast } from "{{ url_for('static', path='js/api.js') }}";
+
+    const tbody = document.getElementById("tabla-peliculas-body");
+    const form = document.getElementById("form-pelicula");
+    const inputId = document.getElementById("pelicula-id");
+    const inputTitulo = document.getElementById("pelicula-titulo");
+    const inputAnio = document.getElementById("pelicula-anio");
+    const inputGenero = document.getElementById("pelicula-genero");
+    const btnLimpiar = document.getElementById("btn-limpiar-pelicula");
+    const inputBuscar = document.getElementById("pelicula-buscar");
+    const btnBuscar = document.getElementById("btn-buscar-pelicula");
+
+    async function cargarPeliculas() {
+        try {
+            const peliculas = await getPeliculas();
+            renderPeliculas(peliculas);
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    }
+
+    function renderPeliculas(peliculas) {
+        tbody.innerHTML = "";
+        peliculas.forEach(p => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${p.id}</td>
+                <td>${p.titulo}</td>
+                <td>${p.anio}</td>
+                <td>${p.genero}</td>
+                <td>
+                    <button class="button is-small is-warning btn-editar" data-id="${p.id}">Editar</button>
+                    <button class="button is-small is-danger is-light btn-eliminar" data-id="${p.id}">Borrar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!form.checkValidity()) {
+            showToast("Revisa los campos del formulario.", "is-warning");
+            return;
+        }
+
+        const payload = {
+            titulo: inputTitulo.value.trim(),
+            anio: Number(inputAnio.value),
+            genero: inputGenero.value.trim()
+        };
+
+        try {
+            if (inputId.value) {
+                await updatePelicula(inputId.value, payload);
+                showToast("Película actualizada correctamente", "is-success");
+            } else {
+                await createPelicula(payload);
+                showToast("Película creada correctamente", "is-success");
+            }
+            form.reset();
+            inputId.value = "";
+            await cargarPeliculas();
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    });
+
+    btnLimpiar.addEventListener("click", () => {
+        form.reset();
+        inputId.value = "";
+    });
+
+    tbody.addEventListener("click", async (e) => {
+        const editBtn = e.target.closest(".btn-editar");
+        const deleteBtn = e.target.closest(".btn-eliminar");
+        if (editBtn) {
+            const row = editBtn.closest("tr").children;
+            inputId.value = row[0].textContent;
+            inputTitulo.value = row[1].textContent;
+            inputAnio.value = row[2].textContent;
+            inputGenero.value = row[3].textContent;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (confirm("¿Seguro que deseas eliminar esta película?")) {
+                try {
+                    await deletePelicula(id);
+                    showToast("Película eliminada (enviada a papelera)", "is-success");
+                    await cargarPeliculas();
+                } catch (e) {
+                    showToast(e.message, "is-danger");
+                }
+            }
+        }
+    });
+
+    btnBuscar.addEventListener("click", async () => {
+        const termino = inputBuscar.value.trim();
+        if (!termino) {
+            cargarPeliculas();
+            return;
+        }
+        try {
+            const res = await fetch(`${window.location.origin}/peliculas/search?nombre=${encodeURIComponent(termino)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Error al buscar");
+            renderPeliculas(data);
+        } catch (e) {
+            showToast(e.message, "is-danger");
+        }
+    });
+
+    cargarPeliculas();
+</script>
+{% endblock %}
+
+

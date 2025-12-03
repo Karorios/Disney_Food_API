@@ -1,18 +1,22 @@
-from typing import Optional, List, Union
-from sqlmodel import SQLModel, Field, Relationship, Column, JSON
-from sqlmodel import JSON
-from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, JSON
+from typing import Optional, List
 
+from sqlalchemy import Column, JSON
+from sqlmodel import SQLModel, Field, Relationship
+
+
+# ------------------ PELÍCULA ------------------
 class PeliculaBase(SQLModel):
-    titulo: str
-    anio: int
-    genero: str
+    titulo: str = Field(min_length=1, max_length=200)
+    anio: int = Field(ge=1900, le=2100, description="Año de estreno de la película")
+    genero: str = Field(min_length=1, max_length=100)
 
 
 class Pelicula(PeliculaBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     activo: bool = Field(default=True)
+
+    # Relación 1:N con Receta
+    recetas: List["Receta"] = Relationship(back_populates="pelicula")
 
 
 class PeliculaCreate(PeliculaBase):
@@ -20,17 +24,17 @@ class PeliculaCreate(PeliculaBase):
 
 
 class PeliculaUpdate(SQLModel):
-    titulo: Optional[str] = None
-    anio: Optional[int] = None
-    genero: Optional[str] = None
+    titulo: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    anio: Optional[int] = Field(default=None, ge=1900, le=2100)
+    genero: Optional[str] = Field(default=None, min_length=1, max_length=100)
     activo: Optional[bool] = None
 
 
 # ------------------ PLATO ------------------
 class PlatoBase(SQLModel):
-    nombre: str
-    descripcion: str
-    tipo: str
+    nombre: str = Field(min_length=1, max_length=200)
+    descripcion: str = Field(min_length=1)
+    tipo: str = Field(min_length=1, max_length=100)
     pelicula_id: int
 
 
@@ -44,19 +48,19 @@ class PlatoCreate(PlatoBase):
 
 
 class PlatoUpdate(SQLModel):
-    nombre: Optional[str] = None
-    descripcion: Optional[str] = None
-    tipo: Optional[str] = None
+    nombre: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    descripcion: Optional[str] = Field(default=None, min_length=1)
+    tipo: Optional[str] = Field(default=None, min_length=1, max_length=100)
     pelicula_id: Optional[int] = None
     activo: Optional[bool] = None
 
 
 # ------------------ RESTAURANTE ------------------
 class RestauranteBase(SQLModel):
-    nombre: str
-    ubicacion: str
-    tipo: str
-    especialidad: Optional[str] = None
+    nombre: str = Field(min_length=1, max_length=200)
+    ubicacion: str = Field(min_length=1, max_length=200)
+    tipo: str = Field(min_length=1, max_length=100)
+    especialidad: Optional[str] = Field(default=None, max_length=200)
 
 
 class Restaurante(RestauranteBase, table=True):
@@ -69,33 +73,49 @@ class RestauranteCreate(RestauranteBase):
 
 
 class RestauranteUpdate(SQLModel):
-    nombre: Optional[str] = None
-    ubicacion: Optional[str] = None
-    tipo: Optional[str] = None
-    especialidad: Optional[str] = None
+    nombre: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    ubicacion: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    tipo: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    especialidad: Optional[str] = Field(default=None, max_length=200)
     activo: Optional[bool] = None
-
-
-from typing import Optional
-from sqlmodel import SQLModel, Field
 
 
 # ------------------ RECETA ------------------
 class RecetaBase(SQLModel):
-    nombre: str
-    ingredientes: list[str] = Field(sa_column=Column(JSON))
-    instrucciones: str
-    plato_id: int | None = Field(default=None, foreign_key="plato.id")
-    activo: bool = True
+    nombre: str = Field(min_length=1, max_length=200)
+    descripcion: str = Field(min_length=1, description="Descripción breve de la receta")
+    ingredientes: List[str] = Field(
+        sa_column=Column(JSON), description="Listado de ingredientes"
+    )
+    pasos: str = Field(min_length=1, description="Pasos detallados de preparación")
+    tiempo_preparacion: int = Field(
+        ge=1, le=600, description="Tiempo de preparación en minutos"
+    )
+    pelicula_id: int = Field(foreign_key="pelicula.id")
+    imagen_url: Optional[str] = Field(
+        default=None,
+        description="URL pública de la imagen almacenada en Supabase u otro storage",
+    )
+    activo: bool = Field(default=True)
+
 
 class Receta(RecetaBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # Relación N:1 con Pelicula
+    pelicula: Optional[Pelicula] = Relationship(back_populates="recetas")
+
 
 class RecetaCreate(RecetaBase):
     pass
 
+
 class RecetaUpdate(SQLModel):
-    nombre: str | None = None
-    ingredientes: list[str] | None = None
-    instrucciones: str | None = None
-    plato_id: int | None = None
+    nombre: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    descripcion: Optional[str] = Field(default=None, min_length=1)
+    ingredientes: Optional[List[str]] = None
+    pasos: Optional[str] = Field(default=None, min_length=1)
+    tiempo_preparacion: Optional[int] = Field(default=None, ge=1, le=600)
+    pelicula_id: Optional[int] = None
+    imagen_url: Optional[str] = None
+    activo: Optional[bool] = None
