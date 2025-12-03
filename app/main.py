@@ -10,20 +10,25 @@ from app.routers import peliculas, platos, restaurantes, recetas, reportes, imag
 app = FastAPI(
     title="Disney Foods API",
     version="2.0",
-    description="API para gestionar peliculas de Disney, los platos inspirados en ellas, restaurantes y recetas.",
+    description="API para gestionar películas de Disney, los platos inspirados en ellas, restaurantes y recetas.",
 )
 
-crear_tablas()
+# ✔ Crear tablas una sola vez cuando el servidor arranca
+@app.on_event("startup")
+def startup():
+    crear_tablas()
 
-# CORS para frontend (Render u otros dominios)
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ajustar en despliegue si se requiere restringir
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Routers
 app.include_router(peliculas.router)
 app.include_router(platos.router)
 app.include_router(restaurantes.router)
@@ -31,6 +36,7 @@ app.include_router(recetas.router)
 app.include_router(reportes.router)
 app.include_router(imagenes.router)
 
+# Archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
@@ -45,7 +51,7 @@ async def inicio(request: Request):
 async def mostrar_plato(request: Request):
     data = {
         "nombre": "Ratatouille",
-        "descripcion": "Un clásico plato provenzal francés con berenjena, calabacín, pimientos y tomate, hecho famoso por la película de Disney-Pixar.",
+        "descripcion": "Un clásico plato provenzal francés...",
         "origen": "Película: Ratatouille (2007)",
         "imagen": "https://i.ytimg.com/vi/M8jQZEIdGr8/maxresdefault.jpg",
     }
@@ -77,33 +83,10 @@ async def mapa_endpoints(request: Request):
             {"accion": "Buscar", "url": "/platos/search?q="},
             {"accion": "Filtrar", "url": "/platos/filter?tipo="}
         ],
-        "Restaurantes": [
-            {"accion": "Crear", "url": "/restaurantes/crear"},
-            {"accion": "Consultar todos", "url": "/restaurantes/find/all"},
-            {"accion": "Consultar por ID", "url": "/restaurantes/find/{restaurante_id}"},
-            {"accion": "Actualizar", "url": "/restaurantes/update/{restaurante_id}"},
-            {"accion": "Eliminar", "url": "/restaurantes/kill/{restaurante_id}"},
-            {"accion": "Restaurar", "url": "/restaurantes/restore/{restaurante_id}"},
-            {"accion": "Papelera", "url": "/restaurantes/trash"},
-            {"accion": "Buscar", "url": "/restaurantes/search?nombre_restaurante="},
-            {"accion": "Filtrar", "url": "/restaurantes/filter?ubicacion="}
-        ],
-        "Recetas": [
-            {"accion": "Crear", "url": "/recetas/crear"},
-            {"accion": "Consultar todas", "url": "/recetas/find/all"},
-            {"accion": "Consultar por ID", "url": "/recetas/find/{receta_id}"},
-            {"accion": "Actualizar", "url": "/recetas/update/{receta_id}"},
-            {"accion": "Eliminar", "url": "/recetas/kill/{receta_id}"},
-            {"accion": "Restaurar", "url": "/recetas/restore/{receta_id}"},
-            {"accion": "Papelera", "url": "/recetas/trash"},
-            {"accion": "Buscar", "url": "/recetas/search?nombre_receta="},
-            {"accion": "Filtrar", "url": "/recetas/filter?dificultad="},
-        ],
     }
     return templates.TemplateResponse("mapa.html", {"request": request, "endpoints": endpoints})
 
 
-# Rutas de frontend HTML
 @app.get("/peliculas-ui", response_class=HTMLResponse)
 async def peliculas_ui(request: Request):
     return templates.TemplateResponse("peliculas.html", {"request": request})
