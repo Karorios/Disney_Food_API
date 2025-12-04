@@ -8,11 +8,15 @@ router = APIRouter(prefix="/recetas", tags=["Recetas"])
 
 @router.post("/crear", response_model=Receta, status_code=201)
 async def crear_receta(data: RecetaCreate, session: SessionDep):
-    nueva = Receta(**data.model_dump())
-    session.add(nueva)
-    session.commit()
-    session.refresh(nueva)
-    return nueva
+    try:
+        nueva = Receta(**data.model_dump())
+        session.add(nueva)
+        session.commit()
+        session.refresh(nueva)
+        return nueva
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear receta: {str(e)}")
 
 
 @router.get("/find/all", response_model=list[Receta])

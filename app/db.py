@@ -22,6 +22,7 @@ if all([CLEVER_USER, CLEVER_PASSWORD, CLEVER_HOST, CLEVER_DATABASE]):
         f"{CLEVER_PORT}/"
         f"{CLEVER_DATABASE}"
     )
+    print(f"✅ Usando PostgreSQL: {CLEVER_HOST}:{CLEVER_PORT}/{CLEVER_DATABASE}")
 else:
     # Fallback a SQLite para desarrollo local
     DATABASE_URL = "sqlite:///./disney_foods.sqlite3"
@@ -29,8 +30,16 @@ else:
 
 print("🔍 DATABASE_URL configurado")
 
-# Engine de SQLModel
-engine = create_engine(DATABASE_URL, echo=False)
+# Engine de SQLModel con configuración optimizada para PostgreSQL
+# pool_pre_ping: Verifica conexiones antes de usarlas (útil para Render)
+# pool_recycle: Recicla conexiones después de 3600 segundos
+engine = create_engine(
+    DATABASE_URL, 
+    echo=False,
+    pool_pre_ping=True,  # Verifica conexiones antes de usarlas
+    pool_recycle=3600,   # Recicla conexiones cada hora
+    connect_args={"connect_timeout": 10} if "postgresql" in DATABASE_URL else {}
+)
 
 # Dependencia para FastAPI (SQLModel Session)
 def obtener_session():

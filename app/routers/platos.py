@@ -8,11 +8,15 @@ router = APIRouter(prefix="/platos", tags=["Platos"])
 
 @router.post("/crear", response_model=Plato, status_code=201)
 async def crear_plato(plato_data: PlatoCreate, session: SessionDep):
-    nuevo = Plato(**plato_data.model_dump())
-    session.add(nuevo)
-    session.commit()
-    session.refresh(nuevo)
-    return nuevo
+    try:
+        nuevo = Plato(**plato_data.model_dump())
+        session.add(nuevo)
+        session.commit()
+        session.refresh(nuevo)
+        return nuevo
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear plato: {str(e)}")
 
 
 @router.get("/find/all", response_model=list[Plato])

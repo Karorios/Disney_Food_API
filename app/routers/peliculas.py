@@ -14,11 +14,15 @@ def crear_pelicula(
     nueva: PeliculaCreate,
     session: SessionDep
 ):
-    pelicula = Pelicula(**nueva.model_dump())
-    session.add(pelicula)
-    session.commit()
-    session.refresh(pelicula)
-    return pelicula
+    try:
+        pelicula = Pelicula(**nueva.model_dump())
+        session.add(pelicula)
+        session.commit()
+        session.refresh(pelicula)
+        return pelicula
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear película: {str(e)}")
 
 
 # -----------------------------
