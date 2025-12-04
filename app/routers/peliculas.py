@@ -15,13 +15,18 @@ def crear_pelicula(
     session: SessionDep
 ):
     try:
+        print(f"📝 Intentando crear película: {nueva.titulo}")
         pelicula = Pelicula(**nueva.model_dump())
         session.add(pelicula)
         session.commit()
         session.refresh(pelicula)
+        print(f"✅ Película creada exitosamente con ID: {pelicula.id}")
         return pelicula
     except Exception as e:
         session.rollback()
+        print(f"❌ Error al crear película: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al crear película: {str(e)}")
 
 

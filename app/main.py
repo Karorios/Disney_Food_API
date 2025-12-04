@@ -30,22 +30,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
+# Archivos estáticos y templates - MONTAR ANTES de los routers
+# Usar ruta absoluta para que funcione en Render
+BASE_DIR = Path(__file__).parent.parent
+STATIC_DIR = BASE_DIR / "app" / "static"
+TEMPLATES_DIR = BASE_DIR / "app" / "templates"
+
+# Verificar que el directorio existe
+if not STATIC_DIR.exists():
+    raise FileNotFoundError(f"Directorio estático no encontrado: {STATIC_DIR}")
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+# Routers - Después de montar archivos estáticos
 app.include_router(peliculas.router)
 app.include_router(platos.router)
 app.include_router(restaurantes.router)
 app.include_router(recetas.router)
 app.include_router(reportes.router)
 app.include_router(imagenes.router)
-
-# Archivos estáticos y templates
-# Usar ruta absoluta para que funcione en Render
-BASE_DIR = Path(__file__).parent.parent
-STATIC_DIR = BASE_DIR / "app" / "static"
-TEMPLATES_DIR = BASE_DIR / "app" / "templates"
-
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 # Página principal
@@ -107,3 +111,18 @@ async def recetas_ui(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+# Endpoint de prueba para verificar archivos estáticos
+@app.get("/test-static")
+async def test_static():
+    import os
+    BASE_DIR = Path(__file__).parent.parent
+    STATIC_DIR = BASE_DIR / "app" / "static" / "js"
+    api_js_path = STATIC_DIR / "api.js"
+    return {
+        "static_dir_exists": STATIC_DIR.exists(),
+        "api_js_exists": api_js_path.exists(),
+        "static_dir": str(STATIC_DIR),
+        "api_js_path": str(api_js_path)
+    }
