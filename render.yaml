@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: disney-foods-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      # Variables de base de datos PostgreSQL (Render)
+      - key: CLEVER_USER
+        sync: false
+      - key: CLEVER_PASSWORD
+        sync: false
+      - key: CLEVER_HOST
+        sync: false
+      - key: CLEVER_PORT
+        value: 5432
+      - key: CLEVER_DATABASE
+        sync: false
+      # Variables de Supabase para imágenes
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: recetas
+
