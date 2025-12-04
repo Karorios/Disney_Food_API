@@ -47,7 +47,7 @@ def obtener_pelicula(pelicula_id: int, session: SessionDep):
 # Buscar película por nombre
 # -----------------------------
 @router.get("/search", response_model=list[Pelicula])
-def buscar_peliculas(nombre: str = Query(..., description="Término de búsqueda"), session: SessionDep):
+def buscar_peliculas(session: SessionDep, nombre: str = Query(..., description="Término de búsqueda")):
     stmt = select(Pelicula).where(
         Pelicula.titulo.ilike(f"%{nombre}%"),
         Pelicula.activo == True
