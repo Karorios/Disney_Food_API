@@ -4,6 +4,8 @@
 **Desarrollado con:** FastAPI, SQLAlchemy, PostgreSQL, Supabase  
 **Autor:** Karorios
 
+🌐 **API en Producción:** [https://disney-food-api-2.onrender.com/](https://disney-food-api-2.onrender.com/)
+
 ---
 
 ## Descripción
@@ -15,6 +17,18 @@
 - 🍴 Restaurantes  
 
 Cada modelo cuenta con operaciones CRUD completas, manejo de estado (activo/inactivo), y filtros de búsqueda personalizados.
+
+---
+
+## 🚀 Enlaces Útiles
+
+- **API en Producción:** [https://disney-food-api-2.onrender.com/](https://disney-food-api-2.onrender.com/)
+- **Documentación de la API:** [https://disney-food-api-2.onrender.com/docs](https://disney-food-api-2.onrender.com/docs)
+- **Interfaz de Películas:** [https://disney-food-api-2.onrender.com/peliculas-ui](https://disney-food-api-2.onrender.com/peliculas-ui)
+- **Interfaz de Recetas:** [https://disney-food-api-2.onrender.com/recetas-ui](https://disney-food-api-2.onrender.com/recetas-ui)
+- **Dashboard:** [https://disney-food-api-2.onrender.com/dashboard](https://disney-food-api-2.onrender.com/dashboard)
+
+---
 
 ## 🚀 Despliegue
 
