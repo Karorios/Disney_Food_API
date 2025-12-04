@@ -14,7 +14,7 @@ def crear_pelicula(
     nueva: PeliculaCreate,
     session: SessionDep
 ):
-    pelicula = Pelicula.from_orm(nueva)
+    pelicula = Pelicula(**nueva.model_dump())
     session.add(pelicula)
     session.commit()
     session.refresh(pelicula)
@@ -47,7 +47,7 @@ def obtener_pelicula(pelicula_id: int, session: SessionDep):
 # Buscar película por nombre
 # -----------------------------
 @router.get("/search", response_model=list[Pelicula])
-def buscar_peliculas(nombre: str, session: SessionDep):
+def buscar_peliculas(nombre: str = Query(..., description="Término de búsqueda"), session: SessionDep):
     stmt = select(Pelicula).where(
         Pelicula.titulo.ilike(f"%{nombre}%"),
         Pelicula.activo == True
@@ -55,7 +55,7 @@ def buscar_peliculas(nombre: str, session: SessionDep):
     resultados = session.exec(stmt).all()
 
     if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron películas con ese nombre")
+        return []  # Retornar lista vacía en lugar de error 404
 
     return resultados
 
@@ -88,7 +88,7 @@ def actualizar_pelicula(
     if not pelicula:
         raise HTTPException(status_code=404, detail="Película no encontrada")
 
-    for key, value in datos.dict(exclude_unset=True).items():
+    for key, value in datos.model_dump(exclude_unset=True).items():
         setattr(pelicula, key, value)
 
     session.add(pelicula)

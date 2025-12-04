@@ -35,6 +35,7 @@ async def upload_receta_image(file: UploadFile = File(...)):
     path = f"{bucket}/{filename}"
     
     # URL para subir el archivo (POST method)
+    # Formato correcto: /storage/v1/object/{bucket}/{path}
     upload_url = f"{supabase_url}/storage/v1/object/{path}"
 
     try:
@@ -54,10 +55,16 @@ async def upload_receta_image(file: UploadFile = File(...)):
             )
             
             if resp.status_code >= 400:
-                error_detail = resp.text or f"Error HTTP {resp.status_code}"
+                # Intentar parsear el error como JSON si es posible
+                try:
+                    error_json = resp.json()
+                    error_detail = error_json.get("message", error_json.get("error", resp.text))
+                except:
+                    error_detail = resp.text or f"Error HTTP {resp.status_code}"
+                
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Error al subir imagen a Supabase: {error_detail}",
+                    detail=f"Error al subir imagen a Supabase (HTTP {resp.status_code}): {error_detail}",
                 )
                 
     except HTTPException:

@@ -8,7 +8,7 @@ router = APIRouter(prefix="/platos", tags=["Platos"])
 
 @router.post("/crear", response_model=Plato, status_code=201)
 async def crear_plato(plato_data: PlatoCreate, session: SessionDep):
-    nuevo = Plato.from_orm(plato_data)
+    nuevo = Plato(**plato_data.model_dump())
     session.add(nuevo)
     session.commit()
     session.refresh(nuevo)
@@ -53,7 +53,7 @@ async def actualizar_plato(plato_id: int, data: PlatoUpdate, session: SessionDep
     if not plato:
         raise HTTPException(status_code=404, detail="Plato no encontrado")
 
-    datos = data.dict(exclude_unset=True)
+    datos = data.model_dump(exclude_unset=True)
 
     for key, value in datos.items():
         setattr(plato, key, value)

@@ -35,7 +35,7 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
-    import { getEstadisticas, showToast } from "{{ url_for('static', path='js/api.js') }}";
+    import { getEstadisticas, showToast } from "/static/js/api.js";
 
     async function initDashboard() {
         try {

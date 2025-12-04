@@ -8,7 +8,7 @@ router = APIRouter(prefix="/restaurantes", tags=["Restaurantes"])
 
 @router.post("/crear", response_model=Restaurante, status_code=201)
 async def crear_restaurante(data: RestauranteCreate, session: SessionDep):
-    nuevo = Restaurante(**data.dict())
+    nuevo = Restaurante(**data.model_dump())
     session.add(nuevo)
     session.commit()
     session.refresh(nuevo)

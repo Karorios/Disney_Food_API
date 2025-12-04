@@ -1,7 +1,7 @@
 # 🍽️ Disney Foods API
 
-**Versión:** 1.0  
-**Desarrollado con:** FastAPI, SQLAlchemy, SQLite  
+**Versión:** 2.0  
+**Desarrollado con:** FastAPI, SQLAlchemy, PostgreSQL, Supabase  
 **Autor:** Karorios
 
 ---
@@ -15,6 +15,18 @@
 - 🍴 Restaurantes  
 
 Cada modelo cuenta con operaciones CRUD completas, manejo de estado (activo/inactivo), y filtros de búsqueda personalizados.
+
+## 🚀 Despliegue
+
+Este proyecto está configurado para desplegarse en **Render**. Para instrucciones detalladas, consulta el archivo [RENDER_DEPLOY.md](RENDER_DEPLOY.md).
+
+### Configuración Rápida
+
+1. **Base de Datos**: PostgreSQL en Render
+2. **Storage de Imágenes**: Supabase Storage
+3. **Variables de Entorno**: Configurar en el panel de Render
+
+Ver [RENDER_DEPLOY.md](RENDER_DEPLOY.md) para la guía completa de despliegue.
 
 ---
 
